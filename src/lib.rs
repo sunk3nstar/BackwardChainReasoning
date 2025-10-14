@@ -98,6 +98,7 @@ fn subst_single(src: Symbol, theta: &Theta) -> Symbol {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
