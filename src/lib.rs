@@ -31,7 +31,7 @@ impl std::error::Error for ReasoningError {}
 /// let zero = val("zero");
 /// let is = pred("is", vec!(x, val("number")));
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Symbol {
     Var(String),
     Val(String),
@@ -78,6 +78,64 @@ impl Theta {
         match origin {
             Symbol::Var(_) => Ok(Theta { origin, result }),
             _ => Err(ReasoningError::ThetaError),
+        }
+    }
+}
+
+fn subst_single(src: Symbol, theta: &Theta) -> Symbol {
+    match src {
+        Symbol::Val(_) => src.clone(),
+        Symbol::Var(ref x) => match &theta.origin {
+            Symbol::Var(name) if name == x => theta.result.clone(),
+            _ => src.clone(),
+        },
+        Symbol::Predicate(name, args) => {
+            let mut new_args = vec![];
+            for arg in args {
+                new_args.push(subst_single(arg, theta));
+            }
+            Symbol::Predicate(name, new_args)
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_subst_single() {
+        let x = var("X");
+        let john = val("john");
+        let knows = pred("knows", vec![x.clone(), pred("mother", vec![x.clone()])]);
+        let theta = Theta {
+            origin: x.clone(),
+            result: john.clone(),
+        };
+
+        let y = subst_single(knows, &theta);
+        match y {
+            Symbol::Predicate(ref name, ref args) => {
+                assert_eq!(name, "knows");
+                if let Symbol::Val(ref val1) = args[0] {
+                    assert_eq!(val1, "john");
+                } else {
+                    panic!("wrong arg1 type, expect Val");
+                }
+                match args[1] {
+                    Symbol::Predicate(ref name, ref aargs) => {
+                        assert_eq!(name, "mother");
+                        if let Symbol::Val(ref vval) = aargs[0] {
+                            assert_eq!(vval, "john");
+                        } else {
+                            panic!("wrong arg2 inner arg type, expect Val");
+                        }
+                        assert_eq!(aargs.len(), 1);
+                    }
+                    _ => panic!("wrong arg2 type, expect Predicate"),
+                }
+                assert_eq!(args.len(), 2);
+            }
+            _ => panic!("wrong result type, expect Predicate"),
         }
     }
 }
