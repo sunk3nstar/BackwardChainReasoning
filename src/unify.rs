@@ -1,7 +1,7 @@
-use crate::{ReasoningError, Symbol, Theta, pred};
+use crate::{ReasoningError, Symbol, Theta};
 
 /// 合一
-fn unify(x: &Symbol, y: &Symbol, theta_list: &mut Vec<Theta>) -> Result<(), ReasoningError> {
+pub fn unify(x: &Symbol, y: &Symbol, theta_list: &mut Vec<Theta>) -> Result<(), ReasoningError> {
     if x == y {
         return Ok(());
     } else if let Symbol::Var(_) = x {
@@ -51,31 +51,30 @@ fn subst_known(x: &Symbol, theta_list: &[Theta]) -> Option<Symbol> {
     None
 }
 
-/// 使用已知的置换列表反复作用于x直至无法再被置换
-fn exhaust_subst(x: &Symbol, theta_list: &[Theta]) -> Symbol {
-    match x {
-        Symbol::Var(_) => {
-            if let Some(new_x) = subst_known(x, theta_list) {
-                exhaust_subst(&new_x, theta_list)
-            } else {
-                x.clone()
-            }
-        }
-        Symbol::Val(_) => x.clone(),
-        Symbol::Predicate(name, args) => {
-            let mut new_args = Vec::<Symbol>::new();
-            for arg in args.iter() {
-                new_args.push(exhaust_subst(arg, theta_list));
-            }
-            pred(name.clone(), new_args)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{pred, val, var};
+    /// 使用已知的置换列表反复作用于x直至无法再被置换
+    fn exhaust_subst(x: &Symbol, theta_list: &[Theta]) -> Symbol {
+        match x {
+            Symbol::Var(_) => {
+                if let Some(new_x) = subst_known(x, theta_list) {
+                    exhaust_subst(&new_x, theta_list)
+                } else {
+                    x.clone()
+                }
+            }
+            Symbol::Val(_) => x.clone(),
+            Symbol::Predicate(name, args) => {
+                let mut new_args = Vec::<Symbol>::new();
+                for arg in args.iter() {
+                    new_args.push(exhaust_subst(arg, theta_list));
+                }
+                pred(name.clone(), new_args)
+            }
+        }
+    }
     #[test]
     fn test_unify() {
         let a = pred("know", vec![val("john"), var("x")]);

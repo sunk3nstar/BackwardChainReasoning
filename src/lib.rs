@@ -1,5 +1,6 @@
 //! 推理算法
 
+mod bc;
 mod unify;
 
 /// 逻辑语句
@@ -150,7 +151,7 @@ impl Statement for Rule {
 /// 逻辑置换记号
 /// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。  
 /// 其中`origin`必须为变量(`Symbol::Var`)，否则返回ThetaError
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Theta {
     origin: Symbol,
     result: Symbol,
