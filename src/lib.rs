@@ -1,5 +1,6 @@
 //! 推理算法
 
+use std::{any::type_name, fmt::Display};
 mod bc;
 mod unify;
 
@@ -39,7 +40,7 @@ pub enum ReasoningError {
     UnifyError,
 }
 
-impl std::fmt::Display for ReasoningError {
+impl Display for ReasoningError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             ReasoningError::ThetaError => {
@@ -80,6 +81,28 @@ impl Symbol {
     }
     pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Self {
         Symbol::Predicate(name.into(), args)
+    }
+}
+
+impl Display for Symbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Symbol::Var(name) => {
+                write!(f, "{}", name.to_uppercase())
+            }
+            Symbol::Val(name) => {
+                write!(f, "{}", name)
+            }
+            Symbol::Predicate(name, args) => {
+                write!(f, "{}(", name)?;
+                let mut args_iter = args.iter();
+                write!(f, "{}", args_iter.next().unwrap())?;
+                for arg in args_iter {
+                    write!(f, ",{arg}")?;
+                }
+                write!(f, ")")
+            }
+        }
     }
 }
 
@@ -188,6 +211,33 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
 pub struct KB {
     rules: Vec<Rule>,
     facts: Vec<Symbol>,
+}
+
+impl KB {
+    // 在变量后追加编号
+    fn index_var(x: &Symbol, i: usize) -> Symbol {
+        match x {
+            Symbol::Var(name) => var(format!("{name}{i}")),
+            Symbol::Predicate(name, args) => {
+                let mut new_args = Vec::<Symbol>::new();
+                for arg in args.iter() {
+                    new_args.push(KB::index_var(&arg.clone(), i))
+                }
+                pred(name.clone(), new_args)
+            }
+            _ => x.clone(),
+        }
+    }
+    // 变量名标准化
+    // 为知识库中每条规则中的变量按照规则序号追加编号
+    pub fn standardize_var(&mut self) {
+        for (index, rule) in self.rules.iter_mut().enumerate() {
+            for condition in rule.condition.iter_mut() {
+                *condition = KB::index_var(&condition, index);
+            }
+            rule.conclusion = KB::index_var(&rule.conclusion, index);
+        }
+    }
 }
 
 #[cfg(test)]
