@@ -1,5 +1,7 @@
 //! 推理算法
 
+mod unify;
+
 /// 逻辑语句
 pub trait Statement {
     /// 置换
@@ -24,7 +26,7 @@ pub trait Statement {
     /// };
     /// let robin_is_bird_is_animal = r.subst(&theta_list);
     /// ```
-    fn subst(&self, theta_list: &Vec<Theta>) -> Self
+    fn subst(&self, theta_list: &[Theta]) -> Self
     where
         Self: Sized;
 }
@@ -61,7 +63,7 @@ impl std::error::Error for ReasoningError {}
 /// let zero = val("zero");
 /// let is = pred("is", vec!(x.clone(), val("number")));
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Symbol {
     Var(String),
     Val(String),
@@ -81,20 +83,20 @@ impl Symbol {
 }
 
 #[inline]
-pub fn var(s: &'static str) -> Symbol {
+pub fn var(s: impl Into<String>) -> Symbol {
     Symbol::var(s)
 }
 #[inline]
-pub fn val(s: &'static str) -> Symbol {
+pub fn val(s: impl Into<String>) -> Symbol {
     Symbol::val(s)
 }
 #[inline]
-pub fn pred(name: &'static str, args: Vec<Symbol>) -> Symbol {
+pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
     Symbol::pred(name, args)
 }
 
 impl Statement for Symbol {
-    fn subst(&self, theta_list: &Vec<Theta>) -> Self
+    fn subst(&self, theta_list: &[Theta]) -> Self
     where
         Self: Sized,
     {
@@ -103,7 +105,7 @@ impl Statement for Symbol {
             _ => {
                 let mut new = self.clone();
                 for theta in theta_list {
-                    new = subst_single(&new, &theta);
+                    new = subst_single(&new, theta);
                 }
                 new
             }
@@ -130,7 +132,7 @@ pub struct Rule {
 }
 
 impl Statement for Rule {
-    fn subst(&self, theta_list: &Vec<Theta>) -> Self
+    fn subst(&self, theta_list: &[Theta]) -> Self
     where
         Self: Sized,
     {
@@ -148,6 +150,7 @@ impl Statement for Rule {
 /// 逻辑置换记号
 /// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。  
 /// 其中`origin`必须为变量(`Symbol::Var`)，否则返回ThetaError
+#[derive(Debug)]
 pub struct Theta {
     origin: Symbol,
     result: Symbol,
@@ -165,11 +168,11 @@ impl Theta {
 fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
     match src {
         Symbol::Val(_) => src.clone(),
-        Symbol::Var(ref x) => match &theta.origin {
+        Symbol::Var(x) => match &theta.origin {
             Symbol::Var(name) if name == x => theta.result.clone(),
             _ => src.clone(),
         },
-        Symbol::Predicate(ref name, args) => {
+        Symbol::Predicate(name, args) => {
             let mut new_args = vec![];
             for arg in args {
                 new_args.push(subst_single(arg, theta));
@@ -177,6 +180,13 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
             Symbol::Predicate(name.clone(), new_args)
         }
     }
+}
+
+/// 知识库
+/// 这里将其分为规则rules和事实facts两部分
+pub struct KB {
+    rules: Vec<Rule>,
+    facts: Vec<Symbol>,
 }
 
 #[cfg(test)]
@@ -191,45 +201,12 @@ mod tests {
         let theta = Theta::new(x.clone(), john.clone()).unwrap();
 
         let y = subst_single(&knows, &theta);
-        match y {
-            Symbol::Predicate(ref name, ref args) => {
-                assert_eq!(name, "knows");
-                if let Symbol::Val(ref val1) = args[0] {
-                    assert_eq!(val1, "john");
-                } else {
-                    panic!("wrong arg1 type, expect Val");
-                }
-                match args[1] {
-                    Symbol::Predicate(ref name, ref aargs) => {
-                        assert_eq!(name, "mother");
-                        if let Symbol::Val(ref vval) = aargs[0] {
-                            assert_eq!(vval, "john");
-                        } else {
-                            panic!("wrong arg2 inner arg type, expect Val");
-                        }
-                        assert_eq!(aargs.len(), 1);
-                    }
-                    _ => panic!("wrong arg2 type, expect Predicate"),
-                }
-                assert_eq!(args.len(), 2);
-            }
-            _ => panic!("wrong result type, expect Predicate"),
-        }
+        assert_eq!(
+            y,
+            pred(
+                "knows",
+                vec![val("john"), pred("mother", vec![val("john")])]
+            )
+        );
     }
-}
-
-/// 合一
-// fn unify(
-//     x: &impl Statement,
-//     y: &impl Statement,
-//     theta_list: &Vec<Theta>,
-// ) -> Result<Vec<Theta>, ReasoningError> {
-//     match
-// }
-
-/// 知识库
-/// 这里将其分为规则rules和事实facts两部分
-pub struct KB {
-    rules: Vec<Rule>,
-    facts: Vec<Symbol>,
 }
