@@ -1,13 +1,12 @@
-//! 推理算法
+//! ## 包含反向链接算法的一阶谓词逻辑实现
 
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 mod bc;
 pub mod cli;
-mod parser;
 mod unify;
 
-/// 逻辑语句
+/// ## 逻辑语句
 pub trait Statement {
     /// 置换
     /// ```
@@ -36,18 +35,18 @@ pub trait Statement {
         Self: Sized;
 }
 
-/// 错误
+/// ## 错误类型
 #[derive(Debug)]
 pub enum ReasoningError {
     ThetaError,
     UnifyError,
     ParseError,
-    FileError(std::io::Error),
+    FileError(String),
 }
 
 impl Display for ReasoningError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
+        match self {
             ReasoningError::ThetaError => {
                 write!(
                     f,
@@ -58,10 +57,10 @@ impl Display for ReasoningError {
                 write!(f, "No available unification found.")
             }
             ReasoningError::ParseError => {
-                write!(f, "Argument parsing failure")
+                write!(f, "JSON格式错误")
             }
-            ReasoningError::FileError(ref name) => {
-                write!(f, "Cannot read file {}", name)
+            ReasoningError::FileError(name) => {
+                write!(f, "无法读取文件{}", name)
             }
         }
     }
@@ -69,18 +68,12 @@ impl Display for ReasoningError {
 
 impl std::error::Error for ReasoningError {}
 
-impl From<std::io::Error> for ReasoningError {
-    fn from(value: std::io::Error) -> Self {
-        ReasoningError::FileError(value)
-    }
-}
-
 impl From<serde_json::Error> for ReasoningError {
     fn from(_value: serde_json::Error) -> Self {
         ReasoningError::ParseError
     }
 }
-/// 代表变量的逻辑符号
+/// ## 逻辑符号
 /// ```
 /// use reasoning::{var, val, pred};
 /// let x = var("X");
@@ -128,14 +121,17 @@ impl Display for Symbol {
     }
 }
 
+/// ## 常量构造函数
 #[inline]
 pub fn var(s: impl Into<String>) -> Symbol {
     Symbol::var(s)
 }
+/// ## 变量构造函数
 #[inline]
 pub fn val(s: impl Into<String>) -> Symbol {
     Symbol::val(s)
 }
+/// ## 谓词构造函数
 #[inline]
 pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
     Symbol::pred(name, args)
@@ -159,7 +155,7 @@ impl Statement for Symbol {
     }
 }
 
-/// 规则（一阶确定子句）  
+/// ## 规则（一阶确定子句）  
 /// 形如X^Y^Z=>W的语句。=>左侧为condition，右侧为conclusion
 /// ```
 /// # use reasoning::{var, val, pred, Rule};
@@ -193,7 +189,7 @@ impl Statement for Rule {
     }
 }
 
-/// 逻辑置换记号
+/// ## 逻辑置换记号
 /// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。  
 /// 其中`origin`必须为变量(`Symbol::Var`)，否则返回ThetaError
 #[derive(Debug, Clone)]
@@ -228,12 +224,12 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
     }
 }
 
-/// 知识库
+/// ## 知识库  
 /// 这里将其分为规则rules和事实facts两部分
 #[derive(Serialize, Deserialize)]
 pub struct KB {
-    rules: Vec<Rule>,
-    facts: Vec<Symbol>,
+    pub rules: Vec<Rule>,
+    pub facts: Vec<Symbol>,
 }
 
 impl KB {
@@ -251,12 +247,12 @@ impl KB {
             _ => x.clone(),
         }
     }
-    // 变量名标准化
-    // 为知识库中每条规则中的变量按照规则序号追加编号
+    /// ## 变量名标准化  
+    /// 为知识库中每条规则中的变量按照规则序号追加编号
     pub fn standardize_var(&mut self) {
         for (index, rule) in self.rules.iter_mut().enumerate() {
             for condition in rule.condition.iter_mut() {
-                *condition = KB::index_var(&condition, index);
+                *condition = KB::index_var(condition, index);
             }
             rule.conclusion = KB::index_var(&rule.conclusion, index);
         }

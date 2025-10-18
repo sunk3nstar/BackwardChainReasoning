@@ -1,0 +1,68 @@
+{
+  "rules": [
+    {
+      "condition": [
+        {
+          "Predicate": ["leq", [{ "Var": "x" }, { "Var": "y" }]]
+        },
+        {
+          "Predicate": ["leq", [{ "Var": "y" }, { "Var": "z" }]]
+        }
+      ],
+      "conclusion": {
+        "Predicate": ["leq", [{ "Var": "x" }, { "Var": "z" }]]
+      }
+    },
+    {
+      "condition": [
+        {
+          "Predicate": ["leq", [{ "Var": "w" }, { "Var": "y" }]]
+        },
+        {
+          "Predicate": ["leq", [{ "Var": "x" }, { "Var": "z" }]]
+        }
+      ],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Predicate": ["add", [{ "Var": "w" }, { "Var": "x" }]] },
+            { "Predicate": ["add", [{ "Var": "y" }, { "Var": "z" }]] }
+          ]
+        ]
+      }
+    }
+  ],
+  "facts": [
+    { "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]] },
+    { "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]] },
+    { "Predicate": ["leq", [{ "Var": "x" }, { "Var": "x" }]] },
+    {
+      "Predicate": [
+        "leq",
+        [
+          { "Var": "x" },
+          { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] }
+        ]
+      ]
+    },
+    {
+      "Predicate": [
+        "leq",
+        [
+          { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] },
+          { "Var": "x" }
+        ]
+      ]
+    },
+    {
+      "Predicate": [
+        "leq",
+        [
+          { "Predicate": ["add", [{ "Var": "x" }, { "Var": "y" }]] },
+          { "Predicate": ["add", [{ "Var": "y" }, { "Var": "x" }]] }
+        ]
+      ]
+    }
+  ]
+}
