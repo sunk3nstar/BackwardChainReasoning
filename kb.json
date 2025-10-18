@@ -1,0 +1,206 @@
+{
+  "rules": [
+    {
+      "condition": [
+        {
+          "Predicate": [
+            "american",
+            [
+              {
+                "Var": "x"
+              }
+            ]
+          ]
+        },
+        {
+          "Predicate": [
+            "weapon",
+            [
+              {
+                "Var": "y"
+              }
+            ]
+          ]
+        },
+        {
+          "Predicate": [
+            "sells",
+            [
+              {
+                "Var": "x"
+              },
+              {
+                "Var": "y"
+              },
+              {
+                "Var": "z"
+              }
+            ]
+          ]
+        },
+        {
+          "Predicate": [
+            "hostile",
+            [
+              {
+                "Var": "z"
+              }
+            ]
+          ]
+        }
+      ],
+      "conclusion": {
+        "Predicate": [
+          "criminal",
+          [
+            {
+              "Var": "x"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "Predicate": [
+            "missile",
+            [
+              {
+                "Var": "x"
+              }
+            ]
+          ]
+        },
+        {
+          "Predicate": [
+            "owns",
+            [
+              {
+                "Val": "nono"
+              },
+              {
+                "Var": "x"
+              }
+            ]
+          ]
+        }
+      ],
+      "conclusion": {
+        "Predicate": [
+          "sells",
+          [
+            {
+              "Val": "west"
+            },
+            {
+              "Var": "x"
+            },
+            {
+              "Val": "nono"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "Predicate": [
+            "missile",
+            [
+              {
+                "Var": "x"
+              }
+            ]
+          ]
+        }
+      ],
+      "conclusion": {
+        "Predicate": [
+          "weapon",
+          [
+            {
+              "Var": "x"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "Predicate": [
+            "enemy",
+            [
+              {
+                "Var": "x"
+              },
+              {
+                "Val": "america"
+              }
+            ]
+          ]
+        }
+      ],
+      "conclusion": {
+        "Predicate": [
+          "hostile",
+          [
+            {
+              "Var": "x"
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "facts": [
+    {
+      "Predicate": [
+        "owns",
+        [
+          {
+            "Val": "nono"
+          },
+          {
+            "Val": "m1"
+          }
+        ]
+      ]
+    },
+    {
+      "Predicate": [
+        "missile",
+        [
+          {
+            "Val": "m1"
+          }
+        ]
+      ]
+    },
+    {
+      "Predicate": [
+        "american",
+        [
+          {
+            "Val": "west"
+          }
+        ]
+      ]
+    },
+    {
+      "Predicate": [
+        "enemy",
+        [
+          {
+            "Val": "nono"
+          },
+          {
+            "Val": "america"
+          }
+        ]
+      ]
+    }
+  ]
+}

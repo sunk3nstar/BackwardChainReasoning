@@ -1,7 +1,10 @@
 //! 推理算法
 
-use std::{any::type_name, fmt::Display};
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 mod bc;
+pub mod cli;
+mod parser;
 mod unify;
 
 /// 逻辑语句
@@ -38,6 +41,8 @@ pub trait Statement {
 pub enum ReasoningError {
     ThetaError,
     UnifyError,
+    ParseError,
+    FileError(std::io::Error),
 }
 
 impl Display for ReasoningError {
@@ -52,12 +57,29 @@ impl Display for ReasoningError {
             ReasoningError::UnifyError => {
                 write!(f, "No available unification found.")
             }
+            ReasoningError::ParseError => {
+                write!(f, "Argument parsing failure")
+            }
+            ReasoningError::FileError(ref name) => {
+                write!(f, "Cannot read file {}", name)
+            }
         }
     }
 }
 
 impl std::error::Error for ReasoningError {}
 
+impl From<std::io::Error> for ReasoningError {
+    fn from(value: std::io::Error) -> Self {
+        ReasoningError::FileError(value)
+    }
+}
+
+impl From<serde_json::Error> for ReasoningError {
+    fn from(_value: serde_json::Error) -> Self {
+        ReasoningError::ParseError
+    }
+}
 /// 代表变量的逻辑符号
 /// ```
 /// use reasoning::{var, val, pred};
@@ -65,7 +87,7 @@ impl std::error::Error for ReasoningError {}
 /// let zero = val("zero");
 /// let is = pred("is", vec!(x.clone(), val("number")));
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Symbol {
     Var(String),
     Val(String),
@@ -149,7 +171,7 @@ impl Statement for Symbol {
 ///   conclusion: pred("is", vec!(var("X"), val("animal")))
 /// };
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Rule {
     pub condition: Vec<Symbol>,
     pub conclusion: Symbol,
@@ -208,6 +230,7 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
 
 /// 知识库
 /// 这里将其分为规则rules和事实facts两部分
+#[derive(Serialize, Deserialize)]
 pub struct KB {
     rules: Vec<Rule>,
     facts: Vec<Symbol>,

@@ -1,6 +1,7 @@
-use reasoning::{pred, val, var};
+use clap::Parser;
+use reasoning::cli::{Cli, prove};
 
 fn main() {
-    let a = pred("is", vec![var("X"), val("animal")]);
-    println!("{a:#?}");
+    let args = Cli::parse();
+    prove(&args).unwrap();
 }
