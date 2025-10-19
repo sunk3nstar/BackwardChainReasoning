@@ -6,14 +6,33 @@ pub fn bc(
     theorem: &Symbol,
     thetas: &mut Vec<Theta>,
     verbose: bool,
+    call_stack: &mut Vec<Symbol>,
+    depth: usize,
+    max_depth: usize,
 ) -> Result<(), ReasoningError> {
+    // for theta in thetas.iter() {
+    //     println!("\r\n{}:{}\r\n", theta.origin, theta.result);
+    // }
+    if call_stack.contains(theorem) {
+        if verbose {
+            let subst_theorem = exhaust_subst(&theorem, thetas);
+            println!("检测到循环目标 {subst_theorem}，回退");
+        }
+        return Err(ReasoningError::UnifyError);
+    }
+    if depth > max_depth {
+        return Err(ReasoningError::UnifyError);
+    }
+    call_stack.push(theorem.clone());
     if verbose {
-        println!("对{theorem}的证明：");
+        let subst_theorem = exhaust_subst(&theorem, thetas);
+        println!("对{subst_theorem}的证明：");
     }
     for fact in kb.facts.iter() {
-        let mut tmp_theta = thetas.clone();
-        if unify(theorem, fact, &mut tmp_theta).is_ok() {
-            *thetas = tmp_theta;
+        let base_theta = thetas.clone();
+        let all_paths = unify(theorem, fact, &base_theta);
+        for path_theta in all_paths {
+            *thetas = path_theta;
             if verbose {
                 println!("{fact}是已知条件，证毕。");
             }
@@ -21,24 +40,38 @@ pub fn bc(
         }
     }
     for rule in kb.rules.iter() {
-        let mut tmp_theta = thetas.clone();
-        if unify(theorem, &rule.conclusion, &mut tmp_theta).is_ok() {
-            *thetas = tmp_theta.clone();
+        let base_theta = thetas.clone();
+        let all_paths = unify(theorem, &rule.conclusion, &base_theta);
+        // eprintln!("\r\nwith {:?} => {}\r\n", &rule.condition, &rule.conclusion);
+        // eprintln!("\r\nunify_all( {},  {} )\r\n", theorem, &rule.conclusion,);
+        for mut path_theta in all_paths {
             let mut proved = true;
+            // println!("{:?}", rule.condition);
             for condition in rule.condition.iter() {
-                let mut curr_theta = tmp_theta.clone();
                 if verbose {
-                    let subst_condition = exhaust_subst(condition, &curr_theta);
-                    println!("要证{theorem}，需证{subst_condition}");
+                    let subst_theorem = exhaust_subst(&theorem, thetas);
+                    let subst_condition = exhaust_subst(condition, &path_theta);
+                    println!("要证{subst_theorem}，需证{subst_condition}");
                 }
-                if bc(kb, condition, &mut curr_theta, verbose).is_ok() {
-                    *thetas = curr_theta;
-                } else {
+                if bc(
+                    kb,
+                    condition,
+                    &mut path_theta,
+                    verbose,
+                    call_stack,
+                    depth + 1,
+                    max_depth,
+                )
+                .is_err()
+                {
                     proved = false;
                     break;
                 }
             }
             if proved {
+                *thetas = path_theta;
+                // let subst_theorem = exhaust_subst(&theorem, thetas);
+                // println!("{subst_theorem}证明完毕");
                 return Ok(());
             }
         }
@@ -89,7 +122,7 @@ mod test {
         kb.standardize_var();
         let theorem_true = pred("criminal", vec![val("west")]);
         let mut thetas = Vec::<Theta>::new();
-        println!("start");
-        bc(&kb, &theorem_true, &mut thetas, true).unwrap();
+        let mut stack = Vec::<Symbol>::new();
+        bc(&kb, &theorem_true, &mut thetas, true, &mut stack, 0, 100).unwrap();
     }
 }

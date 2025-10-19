@@ -155,7 +155,7 @@ impl Statement for Symbol {
     }
 }
 
-/// ## 规则（一阶确定子句）  
+/// ## 规则（一阶确定子句）
 /// 形如X^Y^Z=>W的语句。=>左侧为condition，右侧为conclusion
 /// ```
 /// # use reasoning::{var, val, pred, Rule};
@@ -190,7 +190,7 @@ impl Statement for Rule {
 }
 
 /// ## 逻辑置换记号
-/// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。  
+/// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。
 /// 其中`origin`必须为变量(`Symbol::Var`)，否则返回ThetaError
 #[derive(Debug, Clone)]
 pub struct Theta {
@@ -224,7 +224,7 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
     }
 }
 
-/// ## 知识库  
+/// ## 知识库
 /// 这里将其分为规则rules和事实facts两部分
 #[derive(Serialize, Deserialize)]
 pub struct KB {
@@ -247,7 +247,7 @@ impl KB {
             _ => x.clone(),
         }
     }
-    /// ## 变量名标准化  
+    /// ## 变量名标准化
     /// 为知识库中每条规则中的变量按照规则序号追加编号
     pub fn standardize_var(&mut self) {
         for (index, rule) in self.rules.iter_mut().enumerate() {

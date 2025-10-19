@@ -31,38 +31,63 @@
           ]
         ]
       }
+    },
+    {
+      "condition": [],
+      "conclusion": { "Predicate": ["leq", [{ "Var": "x" }, { "Var": "x" }]] }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Var": "x" },
+            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] },
+            { "Var": "x" }
+          ]
+        ]
+      }
+    },
+
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Predicate": ["add", [{ "Var": "x" }, { "Var": "y" }]] },
+            { "Predicate": ["add", [{ "Var": "y" }, { "Var": "x" }]] }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]]
+      }
     }
   ],
   "facts": [
     { "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]] },
-    { "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]] },
-    { "Predicate": ["leq", [{ "Var": "x" }, { "Var": "x" }]] },
-    {
-      "Predicate": [
-        "leq",
-        [
-          { "Var": "x" },
-          { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] }
-        ]
-      ]
-    },
-    {
-      "Predicate": [
-        "leq",
-        [
-          { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] },
-          { "Var": "x" }
-        ]
-      ]
-    },
-    {
-      "Predicate": [
-        "leq",
-        [
-          { "Predicate": ["add", [{ "Var": "x" }, { "Var": "y" }]] },
-          { "Predicate": ["add", [{ "Var": "y" }, { "Var": "x" }]] }
-        ]
-      ]
-    }
+    { "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]] }
   ]
 }

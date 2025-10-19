@@ -1,38 +1,55 @@
 use crate::{ReasoningError, Symbol, Theta, pred};
 
 /// 合一
-pub fn unify(x: &Symbol, y: &Symbol, theta_list: &mut Vec<Theta>) -> Result<(), ReasoningError> {
+pub fn unify(x: &Symbol, y: &Symbol, theta_list: &Vec<Theta>) -> Vec<Vec<Theta>> {
     if x == y {
-        return Ok(());
+        return vec![theta_list.clone()];
     } else if let Symbol::Var(_) = x {
         return unify_var(x, y, theta_list);
     } else if let Symbol::Var(_) = y {
         return unify_var(y, x, theta_list);
     } else if let Symbol::Predicate(x_name, x_args) = x
         && let Symbol::Predicate(y_name, y_args) = y
+        && x_name == y_name
+        && x_args.len() == y_args.len()
     {
-        if x_name != y_name {
-            return Err(ReasoningError::UnifyError);
-        } else {
-            for (x_arg, y_arg) in x_args.iter().zip(y_args.iter()) {
-                unify(x_arg, y_arg, theta_list)?;
-            }
-            return Ok(());
-        }
+        return unify_args(x_args, y_args, theta_list);
     }
-    Err(ReasoningError::UnifyError)
+    vec![]
 }
 
 /// 单变量合一
-fn unify_var(var: &Symbol, x: &Symbol, theta_list: &mut Vec<Theta>) -> Result<(), ReasoningError> {
+fn unify_var(var: &Symbol, x: &Symbol, theta_list: &Vec<Theta>) -> Vec<Vec<Theta>> {
     if let Some(val) = subst_known(var, theta_list) {
-        unify(&val, x, theta_list)?;
+        unify(&val, x, theta_list)
     } else if let Some(val) = subst_known(x, theta_list) {
-        unify(var, &val, theta_list)?;
+        unify(var, &val, theta_list)
     } else {
-        theta_list.push(Theta::new(var.clone(), x.clone()).unwrap());
+        let mut new_theta = theta_list.clone();
+        new_theta.push(Theta::new(var.clone(), x.clone()).unwrap());
+        vec![new_theta]
     }
-    Ok(())
+}
+
+fn unify_args(x_args: &[Symbol], y_args: &[Symbol], theta_list: &Vec<Theta>) -> Vec<Vec<Theta>> {
+    if x_args.is_empty() {
+        return vec![theta_list.clone()];
+    }
+
+    let mut results = Vec::new();
+
+    let x_head = &x_args[0];
+    let y_head = &y_args[0];
+    let x_tail = &x_args[1..];
+    let y_tail = &y_args[1..];
+
+    for thetas in unify(x_head, y_head, theta_list) {
+        for theta_res in unify_args(x_tail, y_tail, &thetas) {
+            results.push(theta_res);
+        }
+    }
+
+    results
 }
 
 /// 在已知的置换列表中找到一个变量x的置换结果
@@ -80,8 +97,8 @@ mod tests {
     fn test_unify() {
         let a = pred("know", vec![val("john"), var("x")]);
         let b = pred("know", vec![var("y"), pred("mother", vec![var("y")])]);
-        let mut thetas = Vec::<Theta>::new();
-        unify(&a, &b, &mut thetas).unwrap();
-        assert_eq!(exhaust_subst(&a, &thetas), exhaust_subst(&b, &thetas));
+        let thetas = Vec::<Theta>::new();
+        let res_theta = unify(&a, &b, &thetas)[0].clone();
+        assert_eq!(exhaust_subst(&a, &res_theta), exhaust_subst(&b, &res_theta));
     }
 }

@@ -40,6 +40,7 @@ pub fn prove(args: &Cli) -> Result<(), ReasoningError> {
         serde_json::from_str(&args.statement)?
     };
     let mut thetas = Vec::<Theta>::new();
-    bc(&kb, &theorem, &mut thetas, args.verbose)?;
+    let mut stack = Vec::<Symbol>::new();
+    bc(&kb, &theorem, &mut thetas, args.verbose, &mut stack, 0, 100)?;
     Ok(())
 }
