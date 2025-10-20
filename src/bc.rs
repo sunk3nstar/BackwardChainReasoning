@@ -28,17 +28,6 @@ pub fn bc(
         let subst_theorem = exhaust_subst(&theorem, thetas);
         println!("对{subst_theorem}的证明：");
     }
-    for fact in kb.facts.iter() {
-        let base_theta = thetas.clone();
-        let all_paths = unify(theorem, fact, &base_theta);
-        for path_theta in all_paths {
-            *thetas = path_theta;
-            if verbose {
-                println!("{fact}是已知条件，证毕。");
-            }
-            return Ok(());
-        }
-    }
     for rule in kb.rules.iter() {
         let base_theta = thetas.clone();
         let all_paths = unify(theorem, &rule.conclusion, &base_theta);

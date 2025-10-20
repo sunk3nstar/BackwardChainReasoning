@@ -1,6 +1,18 @@
 {
   "rules": [
     {
+      "condition": [],
+      "conclusion": {
+        "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]]
+      }
+    },
+    {
       "condition": [
         {
           "Predicate": ["leq", [{ "Var": "x" }, { "Var": "y" }]]
@@ -72,22 +84,7 @@
           ]
         ]
       }
-    },
-    {
-      "condition": [],
-      "conclusion": {
-        "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]]
-      }
-    },
-    {
-      "condition": [],
-      "conclusion": {
-        "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]]
-      }
     }
   ],
-  "facts": [
-    { "Predicate": ["leq", [{ "Val": "zero" }, { "Val": "three" }]] },
-    { "Predicate": ["leq", [{ "Val": "seven" }, { "Val": "nine" }]] }
-  ]
+  "facts": []
 }
