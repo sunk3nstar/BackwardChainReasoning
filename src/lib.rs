@@ -40,6 +40,7 @@ pub trait Statement {
 pub enum ReasoningError {
     ThetaError,
     UnifyError,
+    DepthLimitExceed,
     ParseError,
     FileError(String),
 }
@@ -55,6 +56,9 @@ impl Display for ReasoningError {
             }
             ReasoningError::UnifyError => {
                 write!(f, "No available unification found.")
+            }
+            ReasoningError::DepthLimitExceed => {
+                write!(f, "推理递归深度超限。")
             }
             ReasoningError::ParseError => {
                 write!(f, "JSON格式错误")
@@ -245,6 +249,18 @@ impl KB {
                 pred(name.clone(), new_args)
             }
             _ => x.clone(),
+        }
+    }
+    /// ## 规则标准化
+    /// 为一条规则中的变量追加指定序号
+    pub fn rule_standardize(r: &Rule, i: usize) -> Rule {
+        let mut new_condition = Vec::<Symbol>::new();
+        for condition in r.condition.iter() {
+            new_condition.push(KB::index_var(condition, i));
+        }
+        Rule {
+            condition: new_condition,
+            conclusion: KB::index_var(&r.conclusion, i),
         }
     }
     /// ## 变量名标准化

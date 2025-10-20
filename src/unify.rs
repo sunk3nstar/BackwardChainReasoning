@@ -1,4 +1,4 @@
-use crate::{ReasoningError, Symbol, Theta, pred};
+use crate::{Symbol, Theta, pred};
 
 /// 合一
 pub fn unify(x: &Symbol, y: &Symbol, theta_list: &Vec<Theta>) -> Vec<Vec<Theta>> {

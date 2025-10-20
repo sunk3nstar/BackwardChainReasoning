@@ -13,6 +13,30 @@
       }
     },
     {
+      "condition": [],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Var": "x" },
+            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] }
+          ]
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "Predicate": [
+          "leq",
+          [
+            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] },
+            { "Var": "x" }
+          ]
+        ]
+      }
+    },
+    {
       "condition": [
         {
           "Predicate": ["leq", [{ "Var": "x" }, { "Var": "y" }]]
@@ -47,30 +71,6 @@
     {
       "condition": [],
       "conclusion": { "Predicate": ["leq", [{ "Var": "x" }, { "Var": "x" }]] }
-    },
-    {
-      "condition": [],
-      "conclusion": {
-        "Predicate": [
-          "leq",
-          [
-            { "Var": "x" },
-            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] }
-          ]
-        ]
-      }
-    },
-    {
-      "condition": [],
-      "conclusion": {
-        "Predicate": [
-          "leq",
-          [
-            { "Predicate": ["add", [{ "Var": "x" }, { "Val": "zero" }]] },
-            { "Var": "x" }
-          ]
-        ]
-      }
     },
 
     {
