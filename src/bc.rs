@@ -73,8 +73,7 @@ fn bc_core(
             println!("\r\n要证{subst_theorem}，尝试规则：{:?}\r\n", rule);
         }
         for mut path_theta in all_paths {
-            let condition_num = rule.condition.len();
-            let mut proved_num: usize = 0;
+            let mut proved = true;
             // println!("{:?}", rule.condition);
             for condition in rule.condition.iter() {
                 let subst_theorem = exhaust_subst(&theorem, thetas);
@@ -96,24 +95,24 @@ fn bc_core(
                     max_depth,
                     call_time,
                 )
-                .is_ok()
+                .is_err()
                 {
-                    proved_num += 1;
-                } else {
+                    proved = false;
+                    // println!("报错后{proved}的情况");
                     break;
                 }
             }
-            if proved_num == condition_num {
+            if proved {
                 *thetas = path_theta;
                 if rule.condition.is_empty() {
                     println!("在替换{thetas:?}下这是一条已知事实。")
                 }
                 println!("{subst_theorem}证明完毕");
-                call_stack.pop();
                 return Ok(());
             }
         }
     }
+    call_stack.pop();
     Err(ReasoningError::UnifyError)
 }
 
