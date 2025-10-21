@@ -1,8 +1,5 @@
-use super::{KB, ReasoningError, Symbol, Theta};
-use crate::{
-    Rule,
-    unify::{exhaust_subst, unify},
-};
+use super::{KB, ReasoningError, Rule, Symbol, Theta};
+use crate::unify::{exhaust_subst, unify};
 
 pub fn bc(
     kb: &KB,
@@ -14,6 +11,12 @@ pub fn bc(
     let mut call_time = 0;
     let wrapped_theorem = vec![theorem.clone()];
     let mut call_stack = Vec::<Symbol>::new();
+    let mut known_facts = Vec::<Symbol>::new();
+    for rule in kb.rules.iter() {
+        if rule.is_fact() {
+            known_facts.push(rule.conclusion.clone());
+        }
+    }
     let proof = bc_core(
         kb,
         &wrapped_theorem,
@@ -23,6 +26,7 @@ pub fn bc(
         &mut call_stack,
         0,
         max_depth,
+        &mut known_facts,
     );
     if verbose {
         println!("证明步数：{call_time}");
@@ -67,16 +71,19 @@ fn bc_core(
     call_stack: &mut Vec<Symbol>,
     depth: usize,
     max_depth: usize,
+    facts: &mut Vec<Symbol>,
 ) -> Result<(), ReasoningError> {
     if theorems.is_empty() {
         return Ok(());
     }
-    if verbose {
-        println!("------当前深度：{depth}-------");
-    }
     let head = &theorems[0];
     let rest = &theorems[1..];
     let subst_theorem = exhaust_subst(head, thetas);
+    if facts.iter().any(|fact| *fact == subst_theorem) {
+        return bc_core(
+            kb, rest, thetas, verbose, call_time, call_stack, depth, max_depth, facts,
+        );
+    }
     if call_stack.contains(&subst_theorem) {
         if verbose {
             println!("证明{subst_theorem}是循环论证，回退");
@@ -110,10 +117,10 @@ fn bc_core(
                 call_stack,
                 depth + 1,
                 max_depth,
+                facts,
             )
             .is_ok()
-            {
-                if bc_core(
+                && bc_core(
                     kb,
                     rest,
                     &mut tmp_thetas,
@@ -122,14 +129,17 @@ fn bc_core(
                     call_stack,
                     depth,
                     max_depth,
+                    facts,
                 )
                 .is_ok()
-                {
-                    println!("{}得到了证明", subst_theorem);
-                    *thetas = tmp_thetas;
-                    call_stack.pop();
-                    return Ok(());
+            {
+                println!("{}得到了证明", subst_theorem);
+                if !subst_theorem.contains_var() {
+                    facts.push(subst_theorem.clone());
                 }
+                *thetas = tmp_thetas;
+                call_stack.pop();
+                return Ok(());
             }
         }
     }

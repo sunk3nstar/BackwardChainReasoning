@@ -6,35 +6,6 @@ mod bc;
 pub mod cli;
 mod unify;
 
-/// ## 逻辑语句
-pub trait Statement {
-    /// 置换
-    /// ```
-    /// use reasoning::{var, val, pred, Rule, Theta};
-    /// use reasoning::Statement;
-    /// let is = pred("is", vec!(var("X"), var("Y")));
-    /// let mut theta_list = vec!(
-    ///   Theta::new(var("X"), val("Bird")).unwrap(),
-    ///   Theta::new(var("Y"), val("Animal")).unwrap()
-    /// );
-    /// let bird_is_animal = is.subst(&theta_list);
-    /// theta_list.push(
-    ///   Theta::new(var("Z"), val("Robin")).unwrap()
-    /// );
-    /// let r = Rule {
-    ///   condition: vec!(
-    ///     pred("is", vec!(var("Z"), var("Y"))),
-    ///     pred("is", vec!(var("Y"), var("X")))
-    ///   ),
-    ///   conclusion: pred("is", vec!(var("Z"), var("X")))
-    /// };
-    /// let robin_is_bird_is_animal = r.subst(&theta_list);
-    /// ```
-    fn subst(&self, theta_list: &[Theta]) -> Self
-    where
-        Self: Sized;
-}
-
 /// ## 错误类型
 #[derive(Debug)]
 pub enum ReasoningError {
@@ -105,6 +76,20 @@ impl Symbol {
     pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Self {
         Symbol::Predicate(name.into(), args)
     }
+    pub fn contains_var(&self) -> bool {
+        match self {
+            Self::Var(_) => true,
+            Self::Val(_) => false,
+            Self::Predicate(_, args) => {
+                for arg in args {
+                    if arg.contains_var() {
+                        return true;
+                    }
+                }
+                false
+            }
+        }
+    }
 }
 
 impl Display for Symbol {
@@ -145,24 +130,6 @@ pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
     Symbol::pred(name, args)
 }
 
-impl Statement for Symbol {
-    fn subst(&self, theta_list: &[Theta]) -> Self
-    where
-        Self: Sized,
-    {
-        match *self {
-            Symbol::Val(_) => self.clone(),
-            _ => {
-                let mut new = self.clone();
-                for theta in theta_list {
-                    new = subst_single(&new, theta);
-                }
-                new
-            }
-        }
-    }
-}
-
 /// ## 规则（一阶确定子句）
 /// 形如X^Y^Z=>W的语句。=>左侧为condition，右侧为conclusion
 /// ```
@@ -181,18 +148,12 @@ pub struct Rule {
     pub conclusion: Symbol,
 }
 
-impl Statement for Rule {
-    fn subst(&self, theta_list: &[Theta]) -> Self
-    where
-        Self: Sized,
-    {
-        let mut new_conditions = Vec::<Symbol>::new();
-        for symbol in &self.condition {
-            new_conditions.push(symbol.subst(theta_list));
-        }
-        Rule {
-            condition: new_conditions,
-            conclusion: self.conclusion.subst(theta_list),
+impl Rule {
+    pub fn is_fact(&self) -> bool {
+        if self.condition.is_empty() && !self.conclusion.contains_var() {
+            true
+        } else {
+            false
         }
     }
 }
@@ -211,23 +172,6 @@ impl Theta {
         match origin {
             Symbol::Var(_) => Ok(Theta { origin, result }),
             _ => Err(ReasoningError::ThetaError),
-        }
-    }
-}
-
-fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
-    match src {
-        Symbol::Val(_) => src.clone(),
-        Symbol::Var(x) => match &theta.origin {
-            Symbol::Var(name) if name == x => theta.result.clone(),
-            _ => src.clone(),
-        },
-        Symbol::Predicate(name, args) => {
-            let mut new_args = vec![];
-            for arg in args {
-                new_args.push(subst_single(arg, theta));
-            }
-            Symbol::Predicate(name.clone(), new_args)
         }
     }
 }
@@ -275,27 +219,5 @@ impl KB {
             }
             rule.conclusion = KB::index_var(&rule.conclusion, index);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_subst_single() {
-        let x = var("X");
-        let john = val("john");
-        let knows = pred("knows", vec![x.clone(), pred("mother", vec![x.clone()])]);
-        let theta = Theta::new(x.clone(), john.clone()).unwrap();
-
-        let y = subst_single(&knows, &theta);
-        assert_eq!(
-            y,
-            pred(
-                "knows",
-                vec![val("john"), pred("mother", vec![val("john")])]
-            )
-        );
     }
 }
