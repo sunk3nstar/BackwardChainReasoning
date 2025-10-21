@@ -79,7 +79,7 @@ fn bc_core(
     let head = &theorems[0];
     let rest = &theorems[1..];
     let subst_theorem = exhaust_subst(head, thetas);
-    if facts.iter().any(|fact| *fact == subst_theorem) {
+    if facts.contains(&subst_theorem) {
         return bc_core(
             kb, rest, thetas, verbose, call_time, call_stack, depth, max_depth, facts,
         );

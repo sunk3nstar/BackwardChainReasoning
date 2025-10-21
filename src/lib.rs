@@ -62,8 +62,11 @@ impl From<serde_json::Error> for ReasoningError {
 /// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Symbol {
+    /// 变量
     Var(String),
+    /// 常量
     Val(String),
+    /// 谓词公式
     Predicate(String, Vec<Symbol>),
 }
 
@@ -77,6 +80,8 @@ impl Symbol {
     pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Self {
         Symbol::Predicate(name.into(), args)
     }
+    /// ## 判断符号中是否含有变量
+    /// 更常见的用法是判断符号是否仅仅由常量和仅包含常量的谓词公式组成，也即判断该方法是否返回false
     pub fn contains_var(&self) -> bool {
         match self {
             Self::Var(_) => true,
@@ -150,12 +155,9 @@ pub struct Rule {
 }
 
 impl Rule {
+    /// ## 判断规则是否是无条件的常量事实
     pub fn is_fact(&self) -> bool {
-        if self.condition.is_empty() && !self.conclusion.contains_var() {
-            true
-        } else {
-            false
-        }
+        self.condition.is_empty() && !self.conclusion.contains_var()
     }
 }
 
