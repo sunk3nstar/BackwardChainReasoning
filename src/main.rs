@@ -9,7 +9,7 @@ fn main() -> Result<(), ReasoningError> {
     let provement = prove(&args);
     if let Err(e) = provement {
         match e {
-            ReasoningError::UnifyError | ReasoningError::ThetaError => {
+            ReasoningError::ProofNotFound => {
                 println!("无法证明命题为真");
             }
             _ => {

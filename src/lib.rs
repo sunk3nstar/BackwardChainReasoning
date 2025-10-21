@@ -12,6 +12,7 @@ pub enum ReasoningError {
     ThetaError,
     UnifyError,
     DepthLimitExceed,
+    CycleProof,
     ProofNotFound,
     ParseError,
     FileError(String),
@@ -21,16 +22,16 @@ impl Display for ReasoningError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ReasoningError::ThetaError => {
-                write!(
-                    f,
-                    "Substitution can only applied for a variable (Symbol::Var)."
-                )
+                write!(f, "只允许替换变量 (Symbol::Var)")
             }
             ReasoningError::UnifyError => {
-                write!(f, "No available unification found.")
+                write!(f, "未找到合一")
             }
             ReasoningError::DepthLimitExceed => {
-                write!(f, "推理递归深度超限。")
+                write!(f, "推理递归深度超限")
+            }
+            ReasoningError::CycleProof => {
+                write!(f, "发生循环论证")
             }
             ReasoningError::ParseError => {
                 write!(f, "JSON格式错误")
@@ -39,7 +40,7 @@ impl Display for ReasoningError {
                 write!(f, "无法读取文件{}", name)
             }
             ReasoningError::ProofNotFound => {
-                write!(f, "证明路径无效")
+                write!(f, "未找到有效证明路径")
             }
         }
     }

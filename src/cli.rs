@@ -39,7 +39,6 @@ pub fn prove(args: &Cli) -> Result<(), ReasoningError> {
     } else {
         serde_json::from_str(&args.statement)?
     };
-
     bc(&kb, &theorem, args.verbose, 5)?;
     Ok(())
 }

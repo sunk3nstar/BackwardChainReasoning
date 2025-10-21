@@ -86,13 +86,13 @@ fn bc_core(
     }
     if call_stack.contains(&subst_theorem) {
         if verbose {
-            println!("证明{subst_theorem}是循环论证，回退");
+            eprintln!("证明{subst_theorem}是循环论证，回退");
         }
-        return Err(ReasoningError::DepthLimitExceed);
+        return Err(ReasoningError::CycleProof);
     }
     if depth > max_depth {
         if verbose {
-            println!("尝试证明{subst_theorem}时深度超限，回退");
+            eprintln!("尝试证明{subst_theorem}时深度超限，回退");
         }
         return Err(ReasoningError::DepthLimitExceed);
     }
@@ -133,7 +133,9 @@ fn bc_core(
                 )
                 .is_ok()
             {
-                println!("{}得到了证明", subst_theorem);
+                if verbose {
+                    println!("{}得到了证明", subst_theorem);
+                }
                 if !subst_theorem.contains_var() {
                     facts.push(subst_theorem.clone());
                 }
