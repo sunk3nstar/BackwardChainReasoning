@@ -3,7 +3,6 @@ use crate::{
     Rule,
     unify::{exhaust_subst, unify},
 };
-use rand::seq::SliceRandom;
 
 pub fn bc(
     kb: &KB,
@@ -12,108 +11,132 @@ pub fn bc(
     max_depth: usize,
 ) -> Result<(), ReasoningError> {
     let mut thetas = Vec::<Theta>::new();
-    let mut stack = Vec::<Symbol>::new();
-    let mut times: usize = 0;
-    let proof = bc_core(
+    let mut call_time = 0;
+    let wrapped_theorem = vec![theorem.clone()];
+    let proof = bc_args(
         kb,
-        theorem,
+        &wrapped_theorem,
         &mut thetas,
         verbose,
-        &mut stack,
+        &mut call_time,
         0,
         max_depth,
-        &mut times,
     );
-    println!("总步数：{times}");
+    println!("证明步数：{call_time}");
     proof
 }
-fn bc_core(
-    kb: &KB,
+
+struct Ckpt {
+    theorems: Vec<Symbol>,
+    thetas: Vec<Theta>,
+    rule: Rule,
+}
+
+fn get_prove_path(
+    rules: &[Rule],
     theorem: &Symbol,
+    verbose: bool,
+    thetas: &[Theta],
+) -> Result<Vec<Ckpt>, ReasoningError> {
+    let mut to_prove_list = Vec::<Ckpt>::new();
+    for rule in rules.iter() {
+        let mut tmp_thetas: Vec<Theta> = thetas.to_owned();
+        if unify(theorem, &rule.conclusion, &mut tmp_thetas).is_ok() {
+            if verbose {
+                println!("规则{rule:?}可用于证明{theorem}");
+            }
+            to_prove_list.push(Ckpt {
+                theorems: rule.condition.clone(),
+                thetas: tmp_thetas,
+                rule: rule.clone(),
+            });
+        }
+    }
+    if to_prove_list.is_empty() {
+        Err(ReasoningError::ProofNotFound)
+    } else {
+        Ok(to_prove_list)
+    }
+}
+
+fn bc_args(
+    kb: &KB,
+    theorems: &[Symbol],
     thetas: &mut Vec<Theta>,
     verbose: bool,
-    call_stack: &mut Vec<Symbol>,
+    call_time: &mut usize,
     depth: usize,
     max_depth: usize,
-    call_time: &mut usize,
 ) -> Result<(), ReasoningError> {
-    // for theta in thetas.iter() {
-    //     println!("\r\n{}:{}\r\n", theta.origin, theta.result);
-    // }
-    *call_time += 1;
-    let subst_theorem = exhaust_subst(&theorem, thetas);
-    if call_stack.contains(&subst_theorem) {
-        if verbose {
-            println!("检测到循环目标 {subst_theorem}，回退");
-        }
-        return Err(ReasoningError::UnifyError);
+    if theorems.is_empty() {
+        return Ok(());
     }
+
+    println!("------当前深度：{depth}-------");
+    *call_time += 1;
+    let head = &theorems[0];
+    let rest = &theorems[1..];
+    let subst_theorem = exhaust_subst(head, thetas);
     if depth > max_depth {
-        println!("深度{depth}超限");
+        if verbose {
+            println!("尝试证明{subst_theorem}时深度超限，回退");
+        }
         return Err(ReasoningError::DepthLimitExceed);
     }
-    call_stack.push(subst_theorem.clone());
     if verbose {
         println!("对{subst_theorem}的证明：");
-        println!("\r\n当前替换：{:?}\r\n", thetas);
     }
-    let mut rules: Vec<Rule> = kb
+    let rules: Vec<Rule> = kb
         .rules
         .iter()
-        .map(|rule| KB::rule_standardize(rule, *call_time))
+        .map(|r| KB::rule_standardize(r, *call_time))
         .collect();
-    // let mut rng = rand::rng();
-    // rules.shuffle(&mut rng);
-    for rule in rules.iter() {
-        let base_theta = thetas.clone();
-        let all_paths = unify(theorem, &rule.conclusion, &base_theta);
-        // eprintln!("\r\nwith {:?} => {}\r\n", &rule.condition, &rule.conclusion);
-        // eprintln!("\r\nunify_all( {},  {} )\r\n", theorem, &rule.conclusion,);
-        if verbose {
-            println!("\r\n要证{subst_theorem}，尝试规则：{:?}\r\n", rule);
-        }
-        for mut path_theta in all_paths {
-            let mut proved = true;
-            // println!("{:?}", rule.condition);
-            for condition in rule.condition.iter() {
-                let subst_theorem = exhaust_subst(&theorem, thetas);
-                let subst_condition = exhaust_subst(condition, &path_theta);
-                if verbose {
-                    println!(
-                        "\r\n要证{subst_theorem}\r\n根据规则{rule:?}\r\n需证{subst_condition}\r\n"
-                    );
-                    // println!("\r\n当前调用栈：{:?}\r\n", call_stack);
-                    println!("\r\n当前深度：{:?}\r\n", depth);
-                }
-                if bc_core(
+    if let Ok(prove_paths) = get_prove_path(&rules, &subst_theorem, verbose, thetas) {
+        for path in prove_paths {
+            println!("为证明{}使用规则{:?}", subst_theorem, path.rule);
+            let mut tmp_thetas = path.thetas.clone();
+            if bc_args(
+                kb,
+                &path.theorems,
+                &mut tmp_thetas,
+                verbose,
+                call_time,
+                depth + 1,
+                max_depth,
+            )
+            .is_ok()
+            {
+                println!(
+                    "{}的前提条件可能得到满足，下面证明其相关命题：{:?}",
+                    subst_theorem, rest
+                );
+                println!("------");
+                if bc_args(
                     kb,
-                    &subst_condition,
-                    &mut path_theta,
+                    rest,
+                    &mut tmp_thetas,
                     verbose,
-                    call_stack,
-                    depth + 1,
-                    max_depth,
                     call_time,
+                    depth,
+                    max_depth,
                 )
-                .is_err()
+                .is_ok()
                 {
-                    proved = false;
-                    // println!("报错后{proved}的情况");
-                    break;
+                    println!("{}得到了证明", subst_theorem);
+                    println!("------");
+                    *thetas = tmp_thetas;
+                    return Ok(());
+                } else {
+                    println!("{}的路径{:?}失败", subst_theorem, path.rule);
+                    println!("------");
                 }
-            }
-            if proved {
-                *thetas = path_theta;
-                if rule.condition.is_empty() {
-                    println!("在替换{thetas:?}下这是一条已知事实。")
-                }
-                println!("{subst_theorem}证明完毕");
-                return Ok(());
+            } else {
+                println!("{}的前提条件不满足", subst_theorem);
+                println!("------");
             }
         }
     }
-    call_stack.pop();
-    Err(ReasoningError::UnifyError)
+    Err(ReasoningError::ProofNotFound)
 }
 
 #[cfg(test)]
@@ -165,11 +188,10 @@ mod test {
                     conclusion: pred("enemy", vec![val("nono"), val("america")]),
                 },
             ],
-            facts: vec![],
         };
         kb.standardize_var();
         let theorem_true = pred("criminal", vec![val("west")]);
-
-        bc(&kb, &theorem_true, true, 100).unwrap();
+        println!("start");
+        bc(&kb, &theorem_true, true, 10).unwrap();
     }
 }

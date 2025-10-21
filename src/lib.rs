@@ -41,6 +41,7 @@ pub enum ReasoningError {
     ThetaError,
     UnifyError,
     DepthLimitExceed,
+    ProofNotFound,
     ParseError,
     FileError(String),
 }
@@ -65,6 +66,9 @@ impl Display for ReasoningError {
             }
             ReasoningError::FileError(name) => {
                 write!(f, "无法读取文件{}", name)
+            }
+            ReasoningError::ProofNotFound => {
+                write!(f, "证明路径无效")
             }
         }
     }
@@ -171,7 +175,7 @@ impl Statement for Symbol {
 ///   conclusion: pred("is", vec!(var("X"), val("animal")))
 /// };
 /// ```
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Rule {
     pub condition: Vec<Symbol>,
     pub conclusion: Symbol,
@@ -229,11 +233,10 @@ fn subst_single(src: &Symbol, theta: &Theta) -> Symbol {
 }
 
 /// ## 知识库
-/// 这里将其分为规则rules和事实facts两部分
+/// 由规则rules组成
 #[derive(Serialize, Deserialize)]
 pub struct KB {
     pub rules: Vec<Rule>,
-    pub facts: Vec<Symbol>,
 }
 
 impl KB {

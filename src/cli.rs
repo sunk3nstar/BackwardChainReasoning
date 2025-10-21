@@ -1,6 +1,6 @@
 //! ## 用于反向链接推理的命令行入口
 
-use super::{KB, ReasoningError, Symbol, Theta};
+use super::{KB, ReasoningError, Symbol};
 use crate::bc::bc;
 use clap::{ArgAction, Parser};
 
