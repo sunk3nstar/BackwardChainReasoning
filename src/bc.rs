@@ -24,7 +24,9 @@ pub fn bc(
         0,
         max_depth,
     );
-    println!("证明步数：{call_time}");
+    if verbose {
+        println!("证明步数：{call_time}");
+    }
     proof
 }
 
@@ -32,26 +34,20 @@ pub fn bc(
 struct Ckpt {
     theorems: Vec<Symbol>,
     thetas: Vec<Theta>,
-    rule: Rule,
 }
 
 fn get_prove_path(
     rules: &[Rule],
     theorem: &Symbol,
-    verbose: bool,
     thetas: &[Theta],
 ) -> Result<Vec<Ckpt>, ReasoningError> {
     let mut to_prove_list = Vec::<Ckpt>::new();
     for rule in rules.iter() {
         let mut tmp_thetas: Vec<Theta> = thetas.to_owned();
         if unify(theorem, &rule.conclusion, &mut tmp_thetas).is_ok() {
-            if verbose {
-                println!("规则{rule:?}可用于证明{theorem}");
-            }
             to_prove_list.push(Ckpt {
                 theorems: rule.condition.clone(),
                 thetas: tmp_thetas,
-                rule: rule.clone(),
             });
         }
     }
@@ -102,9 +98,8 @@ fn bc_core(
         .iter()
         .map(|r| KB::rule_standardize(r, *call_time))
         .collect();
-    if let Ok(prove_paths) = get_prove_path(&rules, &subst_theorem, verbose, thetas) {
+    if let Ok(prove_paths) = get_prove_path(&rules, &subst_theorem, thetas) {
         for path in prove_paths {
-            println!("为证明{}使用规则{:?}", subst_theorem, path.rule);
             let mut tmp_thetas = path.thetas.clone();
             if bc_core(
                 kb,
@@ -118,11 +113,6 @@ fn bc_core(
             )
             .is_ok()
             {
-                println!(
-                    "{}的前提条件可能得到满足，下面证明其相关命题：{:?}",
-                    subst_theorem, rest
-                );
-                println!("------");
                 if bc_core(
                     kb,
                     rest,
@@ -136,17 +126,10 @@ fn bc_core(
                 .is_ok()
                 {
                     println!("{}得到了证明", subst_theorem);
-                    println!("------");
                     *thetas = tmp_thetas;
                     call_stack.pop();
                     return Ok(());
-                } else {
-                    println!("{}的路径{:?}失败", subst_theorem, path.rule);
-                    println!("------");
                 }
-            } else {
-                println!("{}的前提条件不满足", subst_theorem);
-                println!("------");
             }
         }
     }
