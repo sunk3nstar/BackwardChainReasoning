@@ -13,12 +13,14 @@ pub fn bc(
     let mut thetas = Vec::<Theta>::new();
     let mut call_time = 0;
     let wrapped_theorem = vec![theorem.clone()];
-    let proof = bc_args(
+    let mut call_stack = Vec::<Symbol>::new();
+    let proof = bc_core(
         kb,
         &wrapped_theorem,
         &mut thetas,
         verbose,
         &mut call_time,
+        &mut call_stack,
         0,
         max_depth,
     );
@@ -26,6 +28,7 @@ pub fn bc(
     proof
 }
 
+/// 暂存发现的子命题
 struct Ckpt {
     theorems: Vec<Symbol>,
     thetas: Vec<Theta>,
@@ -59,24 +62,31 @@ fn get_prove_path(
     }
 }
 
-fn bc_args(
+fn bc_core(
     kb: &KB,
     theorems: &[Symbol],
     thetas: &mut Vec<Theta>,
     verbose: bool,
     call_time: &mut usize,
+    call_stack: &mut Vec<Symbol>,
     depth: usize,
     max_depth: usize,
 ) -> Result<(), ReasoningError> {
     if theorems.is_empty() {
         return Ok(());
     }
-
-    println!("------当前深度：{depth}-------");
-    *call_time += 1;
+    if verbose {
+        println!("------当前深度：{depth}-------");
+    }
     let head = &theorems[0];
     let rest = &theorems[1..];
     let subst_theorem = exhaust_subst(head, thetas);
+    if call_stack.contains(&subst_theorem) {
+        if verbose {
+            println!("证明{subst_theorem}是循环论证，回退");
+        }
+        return Err(ReasoningError::DepthLimitExceed);
+    }
     if depth > max_depth {
         if verbose {
             println!("尝试证明{subst_theorem}时深度超限，回退");
@@ -86,6 +96,7 @@ fn bc_args(
     if verbose {
         println!("对{subst_theorem}的证明：");
     }
+    *call_time += 1;
     let rules: Vec<Rule> = kb
         .rules
         .iter()
@@ -95,12 +106,13 @@ fn bc_args(
         for path in prove_paths {
             println!("为证明{}使用规则{:?}", subst_theorem, path.rule);
             let mut tmp_thetas = path.thetas.clone();
-            if bc_args(
+            if bc_core(
                 kb,
                 &path.theorems,
                 &mut tmp_thetas,
                 verbose,
                 call_time,
+                call_stack,
                 depth + 1,
                 max_depth,
             )
@@ -111,12 +123,13 @@ fn bc_args(
                     subst_theorem, rest
                 );
                 println!("------");
-                if bc_args(
+                if bc_core(
                     kb,
                     rest,
                     &mut tmp_thetas,
                     verbose,
                     call_time,
+                    call_stack,
                     depth,
                     max_depth,
                 )
@@ -125,6 +138,7 @@ fn bc_args(
                     println!("{}得到了证明", subst_theorem);
                     println!("------");
                     *thetas = tmp_thetas;
+                    call_stack.pop();
                     return Ok(());
                 } else {
                     println!("{}的路径{:?}失败", subst_theorem, path.rule);
