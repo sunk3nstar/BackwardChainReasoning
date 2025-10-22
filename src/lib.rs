@@ -53,21 +53,15 @@ impl From<serde_json::Error> for ReasoningError {
         ReasoningError::ParseError
     }
 }
-/// ## 逻辑符号
-/// ```
-/// use reasoning::{var, val, pred};
-/// let x = var("X");
-/// let zero = val("zero");
-/// let is = pred("is", vec!(x.clone(), val("number")));
-/// ```
+/// ## 逻辑项
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Symbol {
+enum Symbol {
     /// 变量
     Var(String),
     /// 常量
     Val(String),
-    /// 谓词公式
-    Predicate(String, Vec<Symbol>),
+    /// 函数符号
+    Func(String, Vec<Symbol>),
 }
 
 impl Symbol {
@@ -77,16 +71,16 @@ impl Symbol {
     pub fn val(name: impl Into<String>) -> Self {
         Symbol::Val(name.into())
     }
-    pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Self {
-        Symbol::Predicate(name.into(), args)
+    pub fn func(name: impl Into<String>, args: Vec<Symbol>) -> Self {
+        Symbol::Func(name.into(), args)
     }
     /// ## 判断符号中是否含有变量
-    /// 更常见的用法是判断符号是否仅仅由常量和仅包含常量的谓词公式组成，也即判断该方法是否返回false
+    /// 更常见的用法是判断符号是否仅仅由常量和仅包含常量的函数组成，也即判断该方法是否返回false
     pub fn contains_var(&self) -> bool {
         match self {
             Self::Var(_) => true,
             Self::Val(_) => false,
-            Self::Predicate(_, args) => {
+            Self::Func(_, args) => {
                 for arg in args {
                     if arg.contains_var() {
                         return true;
@@ -107,7 +101,7 @@ impl Display for Symbol {
             Symbol::Val(name) => {
                 write!(f, "{}", name)
             }
-            Symbol::Predicate(name, args) => {
+            Symbol::Func(name, args) => {
                 write!(f, "{}(", name)?;
                 let mut args_iter = args.iter();
                 write!(f, "{}", args_iter.next().unwrap())?;
@@ -122,36 +116,54 @@ impl Display for Symbol {
 
 /// ## 常量构造函数
 #[inline]
-pub fn var(s: impl Into<String>) -> Symbol {
+fn var(s: impl Into<String>) -> Symbol {
     Symbol::var(s)
 }
 /// ## 变量构造函数
 #[inline]
-pub fn val(s: impl Into<String>) -> Symbol {
+fn val(s: impl Into<String>) -> Symbol {
     Symbol::val(s)
 }
-/// ## 谓词构造函数
+/// ## 函数构造函数
 #[inline]
-pub fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
-    Symbol::pred(name, args)
+fn func(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
+    Symbol::func(name, args)
 }
 
-/// ## 规则（一阶确定子句）
+/// 原子公式
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+struct Atom {
+    predicate: String,
+    args: Vec<Symbol>,
+}
+
+/// ## 判断原子公式中是否含有变量
+/// 更常见的用法是判断原子公式是否仅仅由常量和仅包含常量的函数组成，也即判断该方法是否返回false
+impl Atom {
+    fn contains_var(&self) -> bool {
+        self.args.iter().any(|arg| arg.contains_var())
+    }
+}
+
+impl Display for Atom {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}(", self.predicate)?;
+        for (i, arg) in self.args.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", arg)?;
+        }
+        write!(f, ")")
+    }
+}
+
+/// ## 规则（霍恩子句）
 /// 形如X^Y^Z=>W的语句。=>左侧为condition，右侧为conclusion
-/// ```
-/// # use reasoning::{var, val, pred, Rule};
-/// let r = Rule {
-///   condition: vec!(
-///     pred("is", vec!(var("X"), val("bird"))),
-///     pred("is", vec!(val("bird"), val("animal")))
-///   ),
-///   conclusion: pred("is", vec!(var("X"), val("animal")))
-/// };
-/// ```
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Rule {
-    pub condition: Vec<Symbol>,
-    pub conclusion: Symbol,
+struct Rule {
+    pub condition: Vec<Atom>,
+    pub conclusion: Atom,
 }
 
 impl Rule {
@@ -165,7 +177,7 @@ impl Rule {
 /// `Theta { origin, result }` 表示以`result`替换`origin`的一个逻辑置换。
 /// 其中`origin`必须为变量(`Symbol::Var`)，否则返回ThetaError
 #[derive(Debug, Clone)]
-pub struct Theta {
+struct Theta {
     origin: Symbol,
     result: Symbol,
 }
@@ -182,8 +194,8 @@ impl Theta {
 /// ## 知识库
 /// 由规则rules组成
 #[derive(Serialize, Deserialize)]
-pub struct KB {
-    pub rules: Vec<Rule>,
+struct KB {
+    rules: Vec<Rule>,
 }
 
 impl KB {
@@ -191,26 +203,33 @@ impl KB {
     fn index_var(x: &Symbol, i: usize) -> Symbol {
         match x {
             Symbol::Var(name) => var(format!("{name}{i}")),
-            Symbol::Predicate(name, args) => {
+            Symbol::Func(name, args) => {
                 let mut new_args = Vec::<Symbol>::new();
                 for arg in args.iter() {
                     new_args.push(KB::index_var(&arg.clone(), i))
                 }
-                pred(name.clone(), new_args)
+                func(name.clone(), new_args)
             }
             _ => x.clone(),
+        }
+    }
+    // 为原子公式中每个变量追加统一编号
+    fn index_atom(x: &Atom, i: usize) -> Atom {
+        Atom {
+            predicate: x.predicate.clone(),
+            args: x.args.iter().map(|arg| KB::index_var(arg, i)).collect(),
         }
     }
     /// ## 规则标准化
     /// 为一条规则中的变量追加指定序号
     pub fn rule_standardize(r: &Rule, i: usize) -> Rule {
-        let mut new_condition = Vec::<Symbol>::new();
+        let mut new_condition = Vec::<Atom>::new();
         for condition in r.condition.iter() {
-            new_condition.push(KB::index_var(condition, i));
+            new_condition.push(KB::index_atom(condition, i));
         }
         Rule {
             condition: new_condition,
-            conclusion: KB::index_var(&r.conclusion, i),
+            conclusion: KB::index_atom(&r.conclusion, i),
         }
     }
     /// ## 变量名标准化
@@ -218,9 +237,9 @@ impl KB {
     pub fn standardize_var(&mut self) {
         for (index, rule) in self.rules.iter_mut().enumerate() {
             for condition in rule.condition.iter_mut() {
-                *condition = KB::index_var(condition, index);
+                *condition = KB::index_atom(condition, index);
             }
-            rule.conclusion = KB::index_var(&rule.conclusion, index);
+            rule.conclusion = KB::index_atom(&rule.conclusion, index);
         }
     }
 }

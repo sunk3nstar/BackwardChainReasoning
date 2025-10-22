@@ -1,6 +1,6 @@
 //! ## 用于反向链接推理的命令行入口
 
-use super::{KB, ReasoningError, Symbol};
+use super::{Atom, KB, ReasoningError};
 use crate::bc::bc;
 use clap::{ArgAction, Parser};
 
@@ -32,7 +32,7 @@ pub fn prove(args: &Cli) -> Result<(), ReasoningError> {
         kb = serde_json::from_str(&args.knowledge_base)?;
     }
     kb.standardize_var();
-    let theorem: Symbol = if args.smfile {
+    let theorem: Atom = if args.smfile {
         let data = std::fs::read_to_string(&args.statement)
             .map_err(|_| ReasoningError::FileError(args.statement.clone()))?;
         serde_json::from_str(&data)?
