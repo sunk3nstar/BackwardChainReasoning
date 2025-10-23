@@ -1,6 +1,7 @@
 use super::{Atom, KB, ReasoningError, Rule, Theta};
 use crate::unify::{exhaust_subst, unify};
 
+/// 反向链接推理器
 pub fn bc(kb: &KB, theorem: &Atom, verbose: bool, max_depth: usize) -> Result<(), ReasoningError> {
     let mut thetas = Vec::<Theta>::new();
     let mut call_time = 0;
@@ -35,6 +36,7 @@ struct Ckpt {
     thetas: Vec<Theta>,
 }
 
+/// 对于一条命题，找到所有能与其合一的规则结论，记录结论需要的条件和使用的替换
 fn get_prove_path(
     rules: &[Rule],
     theorem: &Atom,
@@ -57,6 +59,14 @@ fn get_prove_path(
     }
 }
 
+/// ## 证明一系列关联命题的反向链接算法
+/// 其中每条命题的前提包含排在其之前的所有命题
+/// 如：为证明0<9，找到的一条可行路径需要证明存在x使得0<x且x<9
+/// 因此需要对命题序列0<x,x<9调用该函数
+/// 函数在通过找到x=x_0证明0<x后不立刻认为0<x得证
+/// 而是将x=x_0代入x<9
+/// 如果x_0不满足x<9则认为证明失败，算法回退采取其他可行路径证明0<9
+/// 当然如果x_0满足了x<9证明就成功了。
 fn bc_core(
     kb: &KB,
     theorems: &[Atom],
@@ -143,59 +153,61 @@ fn bc_core(
     Err(ReasoningError::ProofNotFound)
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     use crate::{Rule, func, val, var};
-//     #[test]
-//     fn test_bc() {
-//         let mut kb = KB {
-//             rules: vec![
-//                 Rule {
-//                     condition: vec![
-//                         pred("american", vec![var("x")]),
-//                         pred("weapon", vec![var("y")]),
-//                         pred("sells", vec![var("x"), var("y"), var("z")]),
-//                         pred("hostile", vec![var("z")]),
-//                     ],
-//                     conclusion: pred("criminal", vec![var("x")]),
-//                 },
-//                 Rule {
-//                     condition: vec![
-//                         pred("missile", vec![var("x")]),
-//                         pred("owns", vec![val("nono"), var("x")]),
-//                     ],
-//                     conclusion: pred("sells", vec![val("west"), var("x"), val("nono")]),
-//                 },
-//                 Rule {
-//                     condition: vec![pred("missile", vec![var("x")])],
-//                     conclusion: pred("weapon", vec![var("x")]),
-//                 },
-//                 Rule {
-//                     condition: vec![pred("enemy", vec![var("x"), val("america")])],
-//                     conclusion: pred("hostile", vec![var("x")]),
-//                 },
-//                 Rule {
-//                     condition: vec![],
-//                     conclusion: pred("owns", vec![val("nono"), val("m1")]),
-//                 },
-//                 Rule {
-//                     condition: vec![],
-//                     conclusion: pred("missile", vec![val("m1")]),
-//                 },
-//                 Rule {
-//                     condition: vec![],
-//                     conclusion: pred("american", vec![val("west")]),
-//                 },
-//                 Rule {
-//                     condition: vec![],
-//                     conclusion: pred("enemy", vec![val("nono"), val("america")]),
-//                 },
-//             ],
-//         };
-//         kb.standardize_var();
-//         let theorem_true = pred("criminal", vec![val("west")]);
-//         println!("start");
-//         bc(&kb, &theorem_true, true, 10).unwrap();
-//     }
-// }
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{Rule, pred, val, var};
+    #[test]
+    fn test_bc_example1() {
+        let mut kb = KB {
+            rules: vec![
+                Rule {
+                    condition: vec![
+                        pred("american", vec![var("x")]),
+                        pred("weapon", vec![var("y")]),
+                        pred("sells", vec![var("x"), var("y"), var("z")]),
+                        pred("hostile", vec![var("z")]),
+                    ],
+                    conclusion: pred("criminal", vec![var("x")]),
+                },
+                Rule {
+                    condition: vec![
+                        pred("missile", vec![var("x")]),
+                        pred("owns", vec![val("nono"), var("x")]),
+                    ],
+                    conclusion: pred("sells", vec![val("west"), var("x"), val("nono")]),
+                },
+                Rule {
+                    condition: vec![pred("missile", vec![var("x")])],
+                    conclusion: pred("weapon", vec![var("x")]),
+                },
+                Rule {
+                    condition: vec![pred("enemy", vec![var("x"), val("america")])],
+                    conclusion: pred("hostile", vec![var("x")]),
+                },
+                Rule {
+                    condition: vec![],
+                    conclusion: pred("owns", vec![val("nono"), val("m1")]),
+                },
+                Rule {
+                    condition: vec![],
+                    conclusion: pred("missile", vec![val("m1")]),
+                },
+                Rule {
+                    condition: vec![],
+                    conclusion: pred("american", vec![val("west")]),
+                },
+                Rule {
+                    condition: vec![],
+                    conclusion: pred("enemy", vec![val("nono"), val("america")]),
+                },
+            ],
+        };
+        kb.standardize_var();
+        let theorem_true = pred("criminal", vec![val("west")]);
+        let json = serde_json::to_string_pretty(&kb).unwrap();
+        std::fs::write("knowledge_base.json", json).unwrap();
+        println!("start");
+        bc(&kb, &theorem_true, true, 5).unwrap();
+    }
+}

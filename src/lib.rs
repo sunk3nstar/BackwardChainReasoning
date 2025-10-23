@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 mod bc;
+#[cfg(any(test, feature = "benchmark"))]
+pub mod bench;
 pub mod cli;
 mod unify;
 
@@ -114,22 +116,6 @@ impl Display for Symbol {
     }
 }
 
-/// ## 常量构造函数
-#[inline]
-fn var(s: impl Into<String>) -> Symbol {
-    Symbol::var(s)
-}
-/// ## 变量构造函数
-#[inline]
-fn val(s: impl Into<String>) -> Symbol {
-    Symbol::val(s)
-}
-/// ## 函数构造函数
-#[inline]
-fn func(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
-    Symbol::func(name, args)
-}
-
 /// 原子公式
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 struct Atom {
@@ -155,6 +141,30 @@ impl Display for Atom {
             write!(f, "{}", arg)?;
         }
         write!(f, ")")
+    }
+}
+
+/// ## 常量构造函数
+#[inline]
+fn var(s: impl Into<String>) -> Symbol {
+    Symbol::var(s)
+}
+/// ## 变量构造函数
+#[inline]
+fn val(s: impl Into<String>) -> Symbol {
+    Symbol::val(s)
+}
+/// ## 函数构造函数
+#[inline]
+fn func(name: impl Into<String>, args: Vec<Symbol>) -> Symbol {
+    Symbol::func(name, args)
+}
+
+/// ## 原子公式构造函数
+fn pred(name: impl Into<String>, args: Vec<Symbol>) -> Atom {
+    Atom {
+        predicate: name.into(),
+        args,
     }
 }
 
