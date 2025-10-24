@@ -159,7 +159,7 @@ mod test {
     use crate::{Rule, pred, val, var};
     #[test]
     fn test_bc_example1() {
-        let mut kb = KB {
+        let kb = KB {
             rules: vec![
                 Rule {
                     condition: vec![
@@ -203,7 +203,6 @@ mod test {
                 },
             ],
         };
-        kb.standardize_var();
         let theorem_true = pred("criminal", vec![val("west")]);
         let json = serde_json::to_string_pretty(&kb).unwrap();
         std::fs::write("knowledge_base.json", json).unwrap();

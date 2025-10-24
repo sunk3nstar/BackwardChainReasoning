@@ -2,7 +2,7 @@ use crate::bc::bc;
 use crate::{KB, Rule, func, pred, val, var};
 
 pub fn bench_bc_math() {
-    let mut kb = KB {
+    let kb = KB {
         rules: vec![
             Rule {
                 condition: vec![],
@@ -62,14 +62,9 @@ pub fn bench_bc_math() {
             },
         ],
     };
-    kb.standardize_var();
     let theorem_true = pred(
         "leq",
         vec![val("seven"), func("add", vec![val("three"), val("nine")])],
     );
-    // let json1 = serde_json::to_string_pretty(&kb).unwrap();
-    // std::fs::write("math.json", json1).unwrap();
-    // let json2 = serde_json::to_string_pretty(&theorem_true).unwrap();
-    // std::fs::write("math_theorem.json", json2).unwrap();
     bc(&kb, &theorem_true, false, 5).unwrap();
 }

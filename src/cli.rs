@@ -23,7 +23,7 @@ pub struct Cli {
 
 /// ## 使用反向链接的逻辑证明器
 pub fn prove(args: &Cli) -> Result<(), ReasoningError> {
-    let mut kb: KB;
+    let kb: KB;
     if args.kbfile {
         let data = std::fs::read_to_string(&args.knowledge_base)
             .map_err(|_| ReasoningError::FileError(args.knowledge_base.clone()))?;
@@ -31,7 +31,6 @@ pub fn prove(args: &Cli) -> Result<(), ReasoningError> {
     } else {
         kb = serde_json::from_str(&args.knowledge_base)?;
     }
-    kb.standardize_var();
     let theorem: Atom = if args.smfile {
         let data = std::fs::read_to_string(&args.statement)
             .map_err(|_| ReasoningError::FileError(args.statement.clone()))?;

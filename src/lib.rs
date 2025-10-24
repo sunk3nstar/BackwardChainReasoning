@@ -242,14 +242,4 @@ impl KB {
             conclusion: KB::index_atom(&r.conclusion, i),
         }
     }
-    /// ## 变量名标准化
-    /// 为知识库中每条规则中的变量按照规则序号追加编号
-    pub fn standardize_var(&mut self) {
-        for (index, rule) in self.rules.iter_mut().enumerate() {
-            for condition in rule.condition.iter_mut() {
-                *condition = KB::index_atom(condition, index);
-            }
-            rule.conclusion = KB::index_atom(&rule.conclusion, index);
-        }
-    }
 }
