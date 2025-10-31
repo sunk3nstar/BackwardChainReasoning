@@ -1,0 +1,184 @@
+{
+  "rules": [
+    {
+      "condition": [
+        {
+          "predicate": "american",
+          "args": [
+            {
+              "Var": "x0"
+            }
+          ]
+        },
+        {
+          "predicate": "weapon",
+          "args": [
+            {
+              "Var": "y0"
+            }
+          ]
+        },
+        {
+          "predicate": "sells",
+          "args": [
+            {
+              "Var": "x0"
+            },
+            {
+              "Var": "y0"
+            },
+            {
+              "Var": "z0"
+            }
+          ]
+        },
+        {
+          "predicate": "hostile",
+          "args": [
+            {
+              "Var": "z0"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "criminal",
+        "args": [
+          {
+            "Var": "x0"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "predicate": "missile",
+          "args": [
+            {
+              "Var": "x1"
+            }
+          ]
+        },
+        {
+          "predicate": "owns",
+          "args": [
+            {
+              "Val": "nono"
+            },
+            {
+              "Var": "x1"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "sells",
+        "args": [
+          {
+            "Val": "west"
+          },
+          {
+            "Var": "x1"
+          },
+          {
+            "Val": "nono"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "predicate": "missile",
+          "args": [
+            {
+              "Var": "x2"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "weapon",
+        "args": [
+          {
+            "Var": "x2"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "predicate": "enemy",
+          "args": [
+            {
+              "Var": "x3"
+            },
+            {
+              "Val": "america"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "hostile",
+        "args": [
+          {
+            "Var": "x3"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "owns",
+        "args": [
+          {
+            "Val": "nono"
+          },
+          {
+            "Val": "m1"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "missile",
+        "args": [
+          {
+            "Val": "m1"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "american",
+        "args": [
+          {
+            "Val": "west"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "enemy",
+        "args": [
+          {
+            "Val": "nono"
+          },
+          {
+            "Val": "america"
+          }
+        ]
+      }
+    }
+  ]
+}

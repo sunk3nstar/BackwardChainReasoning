@@ -1,0 +1,222 @@
+{
+  "rules": [
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Val": "zero"
+          },
+          {
+            "Val": "three"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Val": "seven"
+          },
+          {
+            "Val": "nine"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Var": "x"
+          },
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "x"
+                },
+                {
+                  "Val": "zero"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "x"
+                },
+                {
+                  "Val": "zero"
+                }
+              ]
+            ]
+          },
+          {
+            "Var": "x"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "predicate": "leq",
+          "args": [
+            {
+              "Var": "x"
+            },
+            {
+              "Var": "y"
+            }
+          ]
+        },
+        {
+          "predicate": "leq",
+          "args": [
+            {
+              "Var": "y"
+            },
+            {
+              "Var": "z"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Var": "x"
+          },
+          {
+            "Var": "z"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [
+        {
+          "predicate": "leq",
+          "args": [
+            {
+              "Var": "w"
+            },
+            {
+              "Var": "y"
+            }
+          ]
+        },
+        {
+          "predicate": "leq",
+          "args": [
+            {
+              "Var": "x"
+            },
+            {
+              "Var": "z"
+            }
+          ]
+        }
+      ],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "w"
+                },
+                {
+                  "Var": "x"
+                }
+              ]
+            ]
+          },
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "y"
+                },
+                {
+                  "Var": "z"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Var": "x"
+          },
+          {
+            "Var": "x"
+          }
+        ]
+      }
+    },
+    {
+      "condition": [],
+      "conclusion": {
+        "predicate": "leq",
+        "args": [
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "x"
+                },
+                {
+                  "Var": "y"
+                }
+              ]
+            ]
+          },
+          {
+            "Func": [
+              "add",
+              [
+                {
+                  "Var": "y"
+                },
+                {
+                  "Var": "x"
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

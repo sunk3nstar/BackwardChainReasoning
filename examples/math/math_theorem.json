@@ -1,0 +1,21 @@
+{
+  "predicate": "leq",
+  "args": [
+    {
+      "Val": "seven"
+    },
+    {
+      "Func": [
+        "add",
+        [
+          {
+            "Val": "three"
+          },
+          {
+            "Val": "nine"
+          }
+        ]
+      ]
+    }
+  ]
+}
